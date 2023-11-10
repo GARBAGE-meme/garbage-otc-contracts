@@ -80,7 +80,6 @@ contract GarbageSale is Pausable, Ownable {
         users[msg.sender].tokensPurchased += tokensAmount;
         users[msg.sender].ethSpent += msg.value;
 
-        if (address(this).balance < msg.value) revert NotEnoughEthOnContract();
         (bool success, ) = payable(owner()).call{ value: msg.value }("");
         if (!success) revert EthSendingFailed();
 
