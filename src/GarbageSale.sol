@@ -70,7 +70,7 @@ contract GarbageSale is Pausable, Ownable {
     receive() external payable {
         if (msg.value < 0.1 ether) revert TooLowValue();
         uint256 remainingLimit =  5 ether - users[msg.sender].ethSpent;
-        if (remainingLimit > msg.value) revert PerWalletLimitExceeded(remainingLimit);
+        if (remainingLimit < msg.value) revert PerWalletLimitExceeded(remainingLimit);
 
         (uint256 ethPrice, uint256 tokensAmount) = convertETHToTokensAmount(msg.value);
 
@@ -95,9 +95,9 @@ contract GarbageSale is Pausable, Ownable {
         (uint80 roundID, int256 price, , uint256 updatedAt, uint80 answeredInRound) = priceFeed.latestRoundData();
         ethPrice = uint256(price) / 1e2;
 
-        if (answeredInRound >= roundID
-            || updatedAt >= block.timestamp - 3 hours
-            || price > 0) revert WrongOracleData();
+        if (answeredInRound < roundID
+            || updatedAt < block.timestamp - 3 hours
+            || price < 0) revert WrongOracleData();
         tokensAmount = _ethAmount * uint256(price) / tokenPrice / 1e2;
     }
 }
