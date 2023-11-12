@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "src/GarbageSale.sol";
+import "src/GarbageSaleProxy.sol";
 import "lib/forge-std/src/Script.sol";
 
 contract GarbageSaleDeployScript is Script {
@@ -13,7 +14,10 @@ contract GarbageSaleDeployScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        new GarbageSale(priceFeed, tokenPrice, saleLimit);
+        GarbageSale saleContract = new GarbageSale();
+        GarbageSaleProxy proxyContract = new GarbageSaleProxy();
+
+        proxyContract.initialize(priceFeed, tokenPrice, saleLimit);
 
         vm.stopBroadcast();
     }

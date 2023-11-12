@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "./TestHelper.sol";
+import "./GarbageSaleTestSuit.sol";
 
-contract GarbageSaleTestSuit is TestHelper {
+contract GarbageSaleProxyTestSuit is GarbageSaleTestSuit {
     function setUp() public virtual override {
         super.setUp();
+        updateProxy();
+    }
+
+    function updateProxy() public {
         vm.prank(owner);
         address originalContract = address(new GarbageSaleHarness());
         vm.prank(owner);
@@ -19,7 +23,7 @@ contract GarbageSaleTestSuit is TestHelper {
         );
     }
 
-    function test_SetUpState(address _user) public {
+    function test_SetUpState_AfterUpgrade(address _user) public {
         assertEq(address(saleContract.priceFeed()), address(priceFeed));
         assertEq(saleContract.tokenPrice(), tokenPrice);
         assertEq(saleContract.saleLimit(), saleLimit * 1e18);
@@ -28,7 +32,7 @@ contract GarbageSaleTestSuit is TestHelper {
         assertEq(tokensPurchased, 0);
     }
 
-    function test_Purchase_OK_SinglePurchase(address _user, uint256 _randomUint) public {
+    function test_Purchase_OK_SinglePurchase_AfterUpgrade(address _user, uint256 _randomUint) public {
         uint256 ethAmount = bound(_randomUint, 0.1 ether, 5 ether);
         deal(_user, ethAmount + 1 ether);
 
@@ -45,7 +49,7 @@ contract GarbageSaleTestSuit is TestHelper {
         assertEq(owner.balance, ethAmount);
     }
 
-    function test_Purchase_OK_SeveralPurchases(address _user, uint256 _randomUint) public {
+    function test_Purchase_OK_SeveralPurchases_AfterUpgrade(address _user, uint256 _randomUint) public {
         uint256 ethAmount = bound(_randomUint, 0.1 ether, 2.5 ether);
         deal(_user, ethAmount * 2 + 1 ether);
 
@@ -68,7 +72,7 @@ contract GarbageSaleTestSuit is TestHelper {
         assertEq(owner.balance, ethAmount * 2);
     }
 
-    function test_Purchase_Revert_TooLowValue(address _user, uint256 _randomUint) public {
+    function test_Purchase_Revert_TooLowValue_AfterUpgrade(address _user, uint256 _randomUint) public {
         uint256 ethAmount = bound(_randomUint, 0 ether, 0.1 ether);
         deal(_user, ethAmount + 1 ether);
 
@@ -80,7 +84,7 @@ contract GarbageSaleTestSuit is TestHelper {
         payable(address(saleContract)).call{ value: ethAmount }("");
     }
 
-    function test_Purchase_Revert_PerWalletLimitExceeded_SinglePurchase(address _user, uint256 _randomUint) public {
+    function test_Purchase_Revert_PerWalletLimitExceeded_SinglePurchase_AfterUpgrade(address _user, uint256 _randomUint) public {
         uint256 ethAmount = bound(_randomUint, 5 ether, 1e5 ether);
         deal(_user, ethAmount + 1 ether);
 
@@ -92,7 +96,7 @@ contract GarbageSaleTestSuit is TestHelper {
         payable(address(saleContract)).call{ value: ethAmount }("");
     }
 
-    function test_Purchase_Revert_PerWalletLimitExceeded_SeveralPurchases(address _user, uint256 _randomUint) public {
+    function test_Purchase_Revert_PerWalletLimitExceeded_SeveralPurchases_AfterUpgrade(address _user, uint256 _randomUint) public {
         uint256 ethAmount = bound(_randomUint, 5 ether + 1, 9 ether);
         deal(_user, ethAmount + 1 ether);
 
@@ -112,7 +116,7 @@ contract GarbageSaleTestSuit is TestHelper {
         payable(address(saleContract)).call{ value: ethAmount / 2 }("");
     }
 
-    function test_Purchase_Revert_PresaleLimitExceeded(address _user, uint256 _randomUint) public {
+    function test_Purchase_Revert_PresaleLimitExceeded_AfterUpgrade(address _user, uint256 _randomUint) public {
         uint256 ethAmount = bound(_randomUint, 0.1 ether, 5 ether);
         deal(_user, ethAmount + 1 ether);
 
@@ -126,7 +130,7 @@ contract GarbageSaleTestSuit is TestHelper {
         payable(address(saleContract)).call{ value: ethAmount }("");
     }
 
-    function test_Purchase_convertETHToTokensAmount_OK(uint256 _ethAmount, uint256 _ethPrice) public {
+    function test_Purchase_convertETHToTokensAmount_OK_AfterUpgrade(uint256 _ethAmount, uint256 _ethPrice) public {
         vm.assume(_ethPrice <= type(uint32).max);
         vm.assume(_ethAmount <= type(uint32).max);
         vm.assume(_ethAmount > 0);

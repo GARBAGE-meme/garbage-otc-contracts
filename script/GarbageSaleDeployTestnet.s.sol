@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "src/test/GarbageSaleTestnet.sol";
 import "src/test/ChainLinkPriceFeedMock.sol";
+import "src/GarbageSaleProxy.sol";
 import "lib/forge-std/src/Script.sol";
 
 contract GarbageSaleDeployTestnetScript is Script {
@@ -16,7 +17,10 @@ contract GarbageSaleDeployTestnetScript is Script {
 
         address priceFeed = address(new ChainLinkPriceFeedMock());
 
-        new GarbageSaleTestnet(priceFeed, tokenPrice, saleLimit);
+        GarbageSaleTestnet saleContract = new GarbageSaleTestnet();
+        GarbageSaleProxy proxyContract = new GarbageSaleProxy();
+
+        proxyContract.initialize(priceFeed, tokenPrice, saleLimit);
 
         vm.stopBroadcast();
     }
