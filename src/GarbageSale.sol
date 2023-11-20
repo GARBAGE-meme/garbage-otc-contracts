@@ -1,9 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.22;
 
-import "src/Storage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "src/interfaces/IChainLinkPriceFeed.sol";
 
-contract GarbageSale is Storage {
+contract GarbageSale is Pausable, Ownable {
+    struct User {
+        uint256 ethSpent;
+        uint256 tokensPurchased;
+    }
+
+    IChainLinkPriceFeed public immutable priceFeed;// Address of ChainLink ETH/USD price feed
+
+    uint256 public saleLimit;// Total amount of tokens to be sold
+    uint256 public tokenPrice;// Price for single token in USD
+    uint256 public totalTokensSold;// Total amount of purchased tokens
+
+    mapping(address => User) public users;// Stores the number of tokens purchased by each user and their claim status
+
     event TokensPurchased(
         address indexed user,
         uint256 indexed tokensAmount,
@@ -17,7 +32,6 @@ contract GarbageSale is Storage {
     error PresaleLimitExceeded(uint256 remainingLimit);
     error NotEnoughEthOnContract();
     error EthSendingFailed();
-    error AlreadyInitialized();
 
     /*
         @notice Sets up contract while deploying
@@ -26,24 +40,17 @@ contract GarbageSale is Storage {
         @param _usdPrice: USD price for single token
         @param _presaleLimit: Total amount of tokens to be sold during presale
     **/
-    constructor() Ownable(msg.sender) {}
-
-    event log(uint256);
-
-    function initialize (
+    constructor(
         address _priceFeed,
         uint256 _usdPrice,
         uint256 _presaleLimit
-    ) external onlyOwner {
-        if (initialized) revert AlreadyInitialized();
+    ) Ownable(msg.sender) {
         if (_priceFeed == address(0)) revert ZeroPriceFeedAddress();
 
         priceFeed = IChainLinkPriceFeed(_priceFeed);
         saleLimit = _presaleLimit * 1e18;
 
         tokenPrice = _usdPrice;
-
-        initialized = true;
     }
 
     /// @notice Pausing sale

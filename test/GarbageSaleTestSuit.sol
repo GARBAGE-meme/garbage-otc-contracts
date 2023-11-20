@@ -7,12 +7,7 @@ contract GarbageSaleTestSuit is TestHelper {
     function setUp() public virtual override {
         super.setUp();
         vm.prank(owner);
-        address originalContract = address(new GarbageSaleHarness());
-        vm.prank(owner);
-        saleProxy = new GarbageSaleProxy(payable(originalContract));
-        saleContract = GarbageSaleHarness(payable(saleProxy));
-        vm.prank(owner);
-        saleContract.initialize(
+        saleContract = new GarbageSaleHarness(
             address(priceFeed),
             tokenPrice,
             saleLimit
