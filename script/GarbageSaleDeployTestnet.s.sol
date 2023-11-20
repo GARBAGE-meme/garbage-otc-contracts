@@ -18,9 +18,9 @@ contract GarbageSaleDeployTestnetScript is Script {
         address priceFeed = address(new ChainLinkPriceFeedMock());
 
         GarbageSaleTestnet saleContract = new GarbageSaleTestnet();
-        GarbageSaleProxy proxyContract = new GarbageSaleProxy(address(saleContract));
+        GarbageSaleProxy proxyContract = new GarbageSaleProxy();
 
-        GarbageSaleTestnet(payable(proxyContract)).initialize(priceFeed, tokenPrice, saleLimit);
+        proxyContract.initialize(priceFeed, tokenPrice, saleLimit);
 
         vm.stopBroadcast();
     }

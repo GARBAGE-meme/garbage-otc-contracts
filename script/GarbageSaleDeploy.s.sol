@@ -15,9 +15,9 @@ contract GarbageSaleDeployScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         GarbageSale saleContract = new GarbageSale();
-        GarbageSaleProxy proxyContract = new GarbageSaleProxy(address(saleContract));
+        GarbageSaleProxy proxyContract = new GarbageSaleProxy();
 
-        GarbageSale(payable(proxyContract)).initialize(priceFeed, tokenPrice, saleLimit);
+        proxyContract.initialize(priceFeed, tokenPrice, saleLimit);
 
         vm.stopBroadcast();
     }
