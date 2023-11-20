@@ -16,7 +16,7 @@ contract GarbageSaleDeployTestnetScript is Script {
 
         address priceFeed = address(new ChainLinkPriceFeedMock());
 
-        new GarbageSaleTestnet(priceFeed, tokenPrice, saleLimit);
+        new GarbageSaleTestnet(priceFeed, tokenPrice, saleLimit, vm.addr(deployerPrivateKey));
 
         vm.stopBroadcast();
     }

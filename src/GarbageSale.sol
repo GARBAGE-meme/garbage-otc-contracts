@@ -29,7 +29,7 @@ contract GarbageSale is Pausable, Ownable {
     error WrongOracleData();
     error TooLowValue();
     error PerWalletLimitExceeded(uint256 remainingLimit);
-    error PresaleLimitExceeded(uint256 remainingLimit);
+    error SaleLimitExceeded(uint256 remainingLimit);
     error NotEnoughEthOnContract();
     error EthSendingFailed();
 
@@ -38,17 +38,18 @@ contract GarbageSale is Pausable, Ownable {
         @param _saleToken: Token address
         @param _oracle: ChainLink ETH/USD oracle address
         @param _usdPrice: USD price for single token
-        @param _presaleLimit: Total amount of tokens to be sold during presale
+        @param _saleLimit: Total amount of tokens to be sold during sale
     **/
     constructor(
         address _priceFeed,
         uint256 _usdPrice,
-        uint256 _presaleLimit
-    ) Ownable(msg.sender) {
+        uint256 _saleLimit,
+        address owner
+    ) Ownable(owner) {
         if (_priceFeed == address(0)) revert ZeroPriceFeedAddress();
 
         priceFeed = IChainLinkPriceFeed(_priceFeed);
-        saleLimit = _presaleLimit * 1e18;
+        saleLimit = _saleLimit * 1e18;
 
         tokenPrice = _usdPrice;
     }
@@ -74,7 +75,7 @@ contract GarbageSale is Pausable, Ownable {
 
         (uint256 ethPrice, uint256 tokensAmount) = convertETHToTokensAmount(msg.value);
 
-        if (tokensAmount + totalTokensSold > saleLimit) revert PresaleLimitExceeded(saleLimit - totalTokensSold);
+        if (tokensAmount + totalTokensSold > saleLimit) revert SaleLimitExceeded(saleLimit - totalTokensSold);
 
         totalTokensSold += tokensAmount;
         users[msg.sender].tokensPurchased += tokensAmount;
@@ -89,6 +90,7 @@ contract GarbageSale is Pausable, Ownable {
     /*
         @notice Function for converting eth amount to equal tokens amount
         @param _ethAmount: Amount of eth to calculate
+        @return ethPrice: Current eth price in usdt
         @return tokensAmount: Amount of tokens
     **/
     function convertETHToTokensAmount(uint256 _ethAmount) public view returns (uint256 ethPrice, uint256 tokensAmount) {
@@ -96,7 +98,7 @@ contract GarbageSale is Pausable, Ownable {
         ethPrice = uint256(price) / 1e2;
 
         if (answeredInRound < roundID
-            || updatedAt < block.timestamp - 3 hours
+        || updatedAt < block.timestamp - 3 hours
             || price < 0) revert WrongOracleData();
         tokensAmount = _ethAmount * uint256(price) / tokenPrice / 1e2;
     }

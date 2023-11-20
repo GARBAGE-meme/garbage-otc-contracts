@@ -9,8 +9,9 @@ contract GarbageSaleHarness is GarbageSale {
     constructor(
         address _priceFeed,
         uint256 _usdPrice,
-        uint256 _presaleLimit
-    ) GarbageSale(_priceFeed, _usdPrice, _presaleLimit) {}
+        uint256 _presaleLimit,
+        address _owner
+    ) GarbageSale(_priceFeed, _usdPrice, _presaleLimit, _owner) {}
 
     function setSaleLimitHarness(uint256 _saleLimit) public {
         saleLimit = _saleLimit;
@@ -30,7 +31,7 @@ abstract contract TestHelper is Test {
     error WrongOracleData();
     error TooLowValue();
     error PerWalletLimitExceeded(uint256 remainingLimit);
-    error PresaleLimitExceeded(uint256 remainingLimit);
+    error SaleLimitExceeded(uint256 remainingLimit);
     error NotEnoughEthOnContract();
     error EthSendingFailed();
 

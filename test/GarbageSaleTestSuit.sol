@@ -6,11 +6,11 @@ import "./TestHelper.sol";
 contract GarbageSaleTestSuit is TestHelper {
     function setUp() public virtual override {
         super.setUp();
-        vm.prank(owner);
         saleContract = new GarbageSaleHarness(
             address(priceFeed),
             tokenPrice,
-            saleLimit
+            saleLimit,
+            owner
         );
     }
 
@@ -107,7 +107,7 @@ contract GarbageSaleTestSuit is TestHelper {
         payable(address(saleContract)).call{ value: ethAmount / 2 }("");
     }
 
-    function test_Purchase_Revert_PresaleLimitExceeded(address _user, uint256 _randomUint) public {
+    function test_Purchase_Revert_SaleLimitExceeded(address _user, uint256 _randomUint) public {
         uint256 ethAmount = bound(_randomUint, 0.1 ether, 5 ether);
         deal(_user, ethAmount + 1 ether);
 
@@ -115,7 +115,7 @@ contract GarbageSaleTestSuit is TestHelper {
 
         saleContract.setSaleLimitHarness(tokensAmount - 1);
 
-        vm.expectRevert(abi.encodeWithSelector(PresaleLimitExceeded.selector));
+        vm.expectRevert(abi.encodeWithSelector(SaleLimitExceeded.selector));
 
         vm.prank(_user);
         payable(address(saleContract)).call{ value: ethAmount }("");
