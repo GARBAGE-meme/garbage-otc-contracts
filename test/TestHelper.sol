@@ -11,8 +11,9 @@ contract GarbageSaleHarness is GarbageSale {
         address _priceFeed,
         uint256 _usdPrice,
         uint256 _presaleLimit,
-        address _owner
-    ) GarbageSale(_priceFeed, _usdPrice, _presaleLimit, _owner) {}
+        address _owner,
+        address _saleV2
+    ) GarbageSale(_priceFeed, _usdPrice, _presaleLimit, _owner, _saleV2) {}
 
     function setSaleLimitHarness(uint256 _saleLimit) public {
         saleLimit = _saleLimit;
@@ -21,10 +22,6 @@ contract GarbageSaleHarness is GarbageSale {
 
 interface IUniswapV2RouterWithSwap is IUniswapV2Router02 {
     function swapExactTokensForTokens(uint, uint, address[] calldata, address, uint) external returns (uint[] memory);
-}
-
-interface IUniswapV2Pair {
-    function getReserves() external view returns (uint112, uint112, uint32);
 }
 
 abstract contract TestHelper is Test {
@@ -45,8 +42,10 @@ abstract contract TestHelper is Test {
     error NotEnoughEthOnContract();
     error EthSendingFailed();
 
-    error AlreadyListed();
+    error PairAlreadyCreated();
+    error PairNotCreated();
     error TransfersBlocked();
+    error HoldLimitation();
 
     error OwnableUnauthorizedAccount(address account);
 
@@ -59,40 +58,26 @@ abstract contract TestHelper is Test {
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal returns (uint amountOut) {
         require(amountIn > 0, 'UniswapV2Library: INSUFFICIENT_INPUT_AMOUNT');
         require(reserveIn > 0 && reserveOut > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
-        emit log_string("getAmountOut");
-        emit log_uint(amountIn);
-        emit log_uint(reserveIn);
-        emit log_uint(reserveOut);
         uint amountInWithFee = amountIn * 997;
-        emit log_uint(amountInWithFee);
         uint numerator = amountInWithFee * reserveOut;
-        emit log_uint(numerator);
         uint denominator = reserveIn * 1000 + amountInWithFee;
-        emit log_uint(denominator);
         amountOut = numerator / denominator;
-        emit log_uint(amountOut);
     }
 
     // performs chained getAmountOut calculations on any number of pairs
     function getAmountsOut(address factory, uint amountIn, address[] memory path) internal returns (uint[] memory amounts) {
         require(path.length >= 2, 'UniswapV2Library: INVALID_PATH');
-        emit log_string("getAmountsOut");
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
-        emit log_uint(amounts[0]);
         for (uint i; i < path.length - 1; i++) {
             (uint reserveIn, uint reserveOut) = getReserves(factory, path[i], path[i + 1]);
             amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
-            emit log_uint(amounts[i]);
         }
     }
 
     function getReserves(address factory, address tokenA, address tokenB) internal returns (uint reserveA, uint reserveB) {
         (address token0,) = sortTokens(tokenA, tokenB);
         (uint reserve0, uint reserve1,) = IUniswapV2Pair(pairFor(factory, tokenA, tokenB)).getReserves();
-        emit log_string("getReserves");
-        emit log_uint(reserve0);
-        emit log_uint(reserve1);
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
