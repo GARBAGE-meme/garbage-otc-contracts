@@ -32,21 +32,6 @@ contract GarbageToken is ERC20, Ownable {
         holdLimit = _newHoldLimit;
     }
 
-    function _update(address from, address to, uint256 value) internal override {
-        if (listingBlock != 0
-            && block.number <= listingBlock + antiBotDelay) revert TransfersBlocked();
-        if (listingBlock != 0
-            && block.number <= listingBlock + holdLimitDuration
-            && balanceOf(to) + value >= holdLimit
-            && to != address(uniswapPair)
-            && to != owner()
-            && to != address(this)
-        ) {
-            revert HoldLimitation();
-        }
-        super._update(from, to, value);
-    }
-
     function createPair() external onlyOwner {
         if (address(uniswapPair) != address(0)) revert PairAlreadyCreated();
         uniswapPair = IUniswapV2Pair(
@@ -82,7 +67,22 @@ contract GarbageToken is ERC20, Ownable {
         }
     }
 
-    function rescueERC20(address token, uint256 _amount) external onlyOwner {
-        IERC20(token).transfer(owner(), _amount);
+    function rescueERC20(address _token, uint256 _amount) external onlyOwner {
+        IERC20(_token).transfer(owner(), _amount);
+    }
+
+    function _update(address from, address to, uint256 value) internal override {
+        if (listingBlock != 0
+            && block.number <= listingBlock + antiBotDelay) revert TransfersBlocked();
+        if (listingTime != 0
+        && block.timestamp <= listingTime + holdLimitDuration
+        && balanceOf(to) + value > holdLimit
+        && to != address(uniswapPair)
+        && to != owner()
+            && to != address(this)
+        ) {
+            revert HoldLimitation();
+        }
+        super._update(from, to, value);
     }
 }

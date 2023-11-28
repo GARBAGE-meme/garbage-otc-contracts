@@ -10,7 +10,15 @@ contract GarbageSaleTestSuit is TestHelper {
             address(priceFeed),
             tokenPrice,
             saleLimit,
-            owner
+            owner,
+            address(0)
+        );
+        saleContract = new GarbageSaleHarness(
+            address(priceFeed),
+            tokenPrice,
+            saleLimit,
+            owner,
+            address(saleContract)
         );
     }
 
