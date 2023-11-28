@@ -12,7 +12,11 @@ contract GarbageTokenDeployTestnetScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         require(block.chainid == 11155111 || block.chainid == 5, "Should be deployed only on testnet");
 
-        new GarbageTokenTestnet(totalSupply, vm.addr(deployerPrivateKey));
+        GarbageTokenTestnet deployedContract = new GarbageTokenTestnet(totalSupply, vm.addr(deployerPrivateKey));
+        deployedContract.transfer(0x559463a13830Ee2cf783067845cd2400d7E26B60, 1e18);
+        deployedContract.transfer(address(deployedContract), 1e19);
+
+        deployedContract.WETHT().transfer(address(deployedContract), 1e15);
 
         vm.stopBroadcast();
     }
