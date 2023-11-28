@@ -111,7 +111,7 @@ contract GarbageTokenTestSuite is TestHelper {
     }
 
     /// forge-config: default.fuzz.runs = 10
-    function test_swapAfterListing_Ok(address _user, uint256 _amount) public {
+    function test_swapAfterListing_Ok_WhenPurchasingLessThanLimit(address _user, uint256 _amount) public {
         vm.assume(_user != address(0));
         vm.assume(_amount < 1e4 * 1e18);
         vm.assume(_amount > 1000000);
@@ -139,7 +139,38 @@ contract GarbageTokenTestSuite is TestHelper {
     }
 
     /// forge-config: default.fuzz.runs = 10
-    function test_swapAfterListing_Revert_WhenFirstTimeTryToPurchaseMoreThanLimit(address _user, uint256 _amount) public {
+    function test_swapAfterListing_Ok_WhenHoldLimitTurnedOff(address _user, uint256 _amount) public {
+        vm.assume(_user != address(0));
+        vm.assume(_amount < 1e6 * 1e18);
+        vm.assume(_amount > 1e4 * 1e18);
+        tokenContract.transfer(address(tokenContract), 1e6 * 1e18);
+        deal(address(tokenContract.WETH()), address(tokenContract), 10 * 1e18);
+        tokenContract.transfer(_user, _amount);
+        tokenContract.createPair();
+        tokenContract.provideLiquidity(true);
+        vm.roll(block.number+6);
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenContract);
+        path[1] = address(tokenContract.WETH());
+
+        (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) = pairContract.getReserves();
+
+        uint[] memory amounts = getAmountsOut(address(tokenContract.uniswapV2Router().factory()), _amount, path);
+
+        address router = address(tokenContract.uniswapV2Router());
+
+        vm.prank(_user);
+        tokenContract.approve(router, _amount);
+
+        tokenContract.turnHoldLimitOff();
+
+        vm.prank(_user);
+        IUniswapV2RouterWithSwap(router).swapExactTokensForTokens(_amount, amounts[1], path, address(this), block.timestamp+1);
+    }
+
+    /// forge-config: default.fuzz.runs = 10
+    function test_swapAfterListing_Revert_WhenTryToPurchaseMoreThanLimit(address _user, uint256 _amount) public {
         vm.assume(_user != address(0));
         vm.assume(_amount < 1e6 * 1e18);
         vm.assume(_amount > 1e4 * 1e18);
@@ -164,37 +195,6 @@ contract GarbageTokenTestSuite is TestHelper {
         address router = address(tokenContract.uniswapV2Router());
 
         vm.expectRevert();
-
-        vm.prank(_user);
-        IUniswapV2RouterWithSwap(router).swapExactTokensForTokens(_amount, amounts[1], path, address(this), block.timestamp+1);
-    }
-
-    /// forge-config: default.fuzz.runs = 10
-    function test_swapAfterListing_Ok_WhenFirstTimeTryToPurchaseMoreThanLimit(address _user, uint256 _amount) public {
-        vm.assume(_user != address(0));
-        vm.assume(_amount < 1e6 * 1e18);
-        vm.assume(_amount > 1e4 * 1e18);
-        tokenContract.transfer(address(tokenContract), 1e6 * 1e18);
-        deal(address(tokenContract.WETH()), address(tokenContract), 10 * 1e18);
-        tokenContract.transfer(_user, _amount);
-        tokenContract.createPair();
-        tokenContract.provideLiquidity(true);
-        vm.roll(block.number+6);
-
-        address[] memory path = new address[](2);
-        path[0] = address(tokenContract);
-        path[1] = address(tokenContract.WETH());
-
-        (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) = pairContract.getReserves();
-
-        uint[] memory amounts = getAmountsOut(address(tokenContract.uniswapV2Router().factory()), _amount, path);
-
-        address router = address(tokenContract.uniswapV2Router());
-
-        vm.prank(_user);
-        tokenContract.approve(router, _amount);
-
-        vm.warp(block.timestamp + tokenContract.holdLimitDuration() + 1);
 
         vm.prank(_user);
         IUniswapV2RouterWithSwap(router).swapExactTokensForTokens(_amount, amounts[1], path, address(this), block.timestamp+1);
@@ -235,5 +235,39 @@ contract GarbageTokenTestSuite is TestHelper {
         vm.expectRevert();
         vm.prank(_nonOwner);
         tokenContract.rescueERC20(address(tokenContract), _amount);
+    }
+
+    function test_turnHoldingLimitOn_Ok() public {
+        tokenContract.turnHoldLimitOn();
+
+        assertTrue(tokenContract.isHoldLimitActive());
+    }
+
+    function test_turnHoldingLimitOn_Revert_WhenCalledByNonOwner(address _nonOwner) public {
+        vm.assume(_nonOwner != address(this));
+
+        vm.expectRevert();
+        vm.prank(_nonOwner);
+        tokenContract.turnHoldLimitOn();
+    }
+
+    function test_turnHoldingLimitOff_Ok(address _nonOwner) public {
+        tokenContract.turnHoldLimitOn();
+        assertTrue(tokenContract.isHoldLimitActive());
+
+        tokenContract.turnHoldLimitOff();
+        assertFalse(tokenContract.isHoldLimitActive());
+    }
+
+    function test_turnHoldingLimitOff_Revert_WhenCalledByNonOwner(address _nonOwner) public {
+        vm.assume(_nonOwner != address(this));
+
+        tokenContract.turnHoldLimitOn();
+        assertTrue(tokenContract.isHoldLimitActive());
+
+        vm.expectRevert();
+
+        vm.prank(_nonOwner);
+        tokenContract.turnHoldLimitOff();
     }
 }

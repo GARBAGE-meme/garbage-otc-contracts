@@ -14,9 +14,8 @@ contract GarbageToken is ERC20, Ownable {
     IUniswapV2Router02 public constant uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
 
     uint256 public listingBlock;
-    uint256 public listingTime;
     uint256 public holdLimit;
-    uint256 public holdLimitDuration = 1 weeks;
+    bool public isHoldLimitActive;
     IUniswapV2Pair public uniswapPair;
 
     error PairAlreadyCreated();
@@ -30,6 +29,14 @@ contract GarbageToken is ERC20, Ownable {
 
     function setHoldLimit(uint256 _newHoldLimit) external onlyOwner {
         holdLimit = _newHoldLimit;
+    }
+
+    function turnHoldLimitOn() external onlyOwner {
+        isHoldLimitActive = true;
+    }
+
+    function turnHoldLimitOff() external onlyOwner {
+        isHoldLimitActive = false;
     }
 
     function createPair() external onlyOwner {
@@ -57,13 +64,12 @@ contract GarbageToken is ERC20, Ownable {
             owner(),
             block.timestamp);
 
-        (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
-
-        holdLimit = uint256(uniswapPair.token0() == address(this) ? reserve0 : reserve1) / 100;
-
         if (shouldBlock) {
             listingBlock = block.number;
-            listingTime = block.timestamp;
+            isHoldLimitActive = true;
+
+            (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
+            holdLimit = uint256(uniswapPair.token0() == address(this) ? reserve0 : reserve1) / 100;
         }
     }
 
@@ -74,11 +80,10 @@ contract GarbageToken is ERC20, Ownable {
     function _update(address from, address to, uint256 value) internal override {
         if (listingBlock != 0
             && block.number <= listingBlock + antiBotDelay) revert TransfersBlocked();
-        if (listingTime != 0
-        && block.timestamp <= listingTime + holdLimitDuration
-        && balanceOf(to) + value > holdLimit
-        && to != address(uniswapPair)
-        && to != owner()
+        if (isHoldLimitActive
+            && balanceOf(to) + value > holdLimit
+            && to != address(uniswapPair)
+            && to != owner()
             && to != address(this)
         ) {
             revert HoldLimitation();
