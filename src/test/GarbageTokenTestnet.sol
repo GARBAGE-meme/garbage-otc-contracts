@@ -41,13 +41,12 @@ contract GarbageTokenTestnet is GarbageToken {
             owner(),
             block.timestamp);
 
-        (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
-
-        holdLimit = uint256(uniswapPair.token0() == address(this) ? reserve0 : reserve1) / 100;
-
         if (shouldBlock) {
-            listingBlock = block.number;
-            listingTime = block.timestamp;
+            antiBotDelayStartBlock = block.number;
+            isHoldLimitActive = true;
+
+            (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
+            holdLimit = uint256(uniswapPair.token0() == address(this) ? reserve0 : reserve1) / 100;
         }
     }
 }

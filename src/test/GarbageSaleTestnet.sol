@@ -8,9 +8,8 @@ contract GarbageSaleTestnet is GarbageSale {
         address _priceFeed,
         uint256 _usdPrice,
         uint256 _presaleLimit,
-        address _owner,
-        address _saleV2
-    ) GarbageSale(_priceFeed, _usdPrice, _presaleLimit, _owner, _saleV2) {}
+        address _owner
+    ) GarbageSale(_priceFeed, _usdPrice, _presaleLimit, _owner) {}
 
     function resetUserTestnet(address _user) external {
         totalTokensSold -= users[_user].tokensPurchased;
