@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "src/interfaces/IChainLinkPriceFeed.sol";
 
+// @title Contract for selling GARBAGE tokens. It will be aside from token and claim to be able to exist before token and claim deployment
 contract GarbageSale is Pausable, Ownable {
     struct User {
         uint256 ethSpent;
@@ -35,17 +36,17 @@ contract GarbageSale is Pausable, Ownable {
 
     /*
         @notice Sets up contract while deploying
-        @param _saleToken: Token address
-        @param _oracle: ChainLink ETH/USD oracle address
+        @param _priceFeed: ChainLink ETH/USD oracle address
         @param _usdPrice: USD price for single token
         @param _saleLimit: Total amount of tokens to be sold during sale
+        @param _owner: Address that will be defined as owner
     **/
     constructor(
         address _priceFeed,
         uint256 _usdPrice,
         uint256 _saleLimit,
-        address owner
-    ) Ownable(owner) {
+        address _owner
+    ) Ownable(_owner) {
         if (_priceFeed == address(0)) revert ZeroPriceFeedAddress();
 
         priceFeed = IChainLinkPriceFeed(_priceFeed);
@@ -84,7 +85,7 @@ contract GarbageSale is Pausable, Ownable {
         (bool success, ) = payable(owner()).call{ value: msg.value }("");
         if (!success) revert EthSendingFailed();
 
-        emit TokensPurchased(msg.sender, ethPrice, tokensAmount);
+        emit TokensPurchased(msg.sender, tokensAmount, ethPrice);
     }
 
     /*

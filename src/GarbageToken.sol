@@ -7,38 +7,57 @@ import "src/interfaces/IUniswapV2Router02.sol";
 import "src/interfaces/IUniswapV2Factory.sol";
 import "src/interfaces/IUniswapV2Pair.sol";
 
+/*
+    @title GARBAGE token contract with bot-sniping protection
+    @dev Anti sniping realised by blocking transfer for several blocks after providing liquidity
+    @dev There is hold limit functionality here, it should stops single wallet from holding more than 1% of liquidity pool size
+    @dev Hold limit does not apply to this contract, owner and uniswap pair
+**/
 contract GarbageToken is ERC20, Ownable {
-    uint256 private constant antiBotDelay = 5;
+    uint256 private constant antiBotDelay = 5;// for how many blocks after providing liquidity transfers should be blocked
 
-    IERC20 public constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    IUniswapV2Router02 public constant uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+    IERC20 public constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);// WETH token address
+    IUniswapV2Router02 public constant uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);// UniswapV2Router address
 
-    uint256 public listingBlock;
-    uint256 public holdLimit;
-    bool public isHoldLimitActive;
-    IUniswapV2Pair public uniswapPair;
+    uint256 public antiBotDelayStartBlock;// block from which bot protection delay is calculated
+    uint256 public holdLimit;// holding cap when holding limit is enabled
+    bool public isHoldLimitActive;// displays if holding limit is enabled
+    IUniswapV2Pair public uniswapPair;// address of Uniswap pair
 
     error PairAlreadyCreated();
     error PairNotCreated();
     error TransfersBlocked();
     error HoldLimitation();
 
+    /*
+        @notice Sets up contract while deploying
+        @param _initialSupply: How manu tokens should be minted
+        @param _owner: Address that will be defined as owner
+    **/
     constructor(uint256 _initialSupply, address _owner) ERC20("Garbage Token", "$GARBAGE") Ownable(_owner) {
         _mint(msg.sender, _initialSupply * 10 ** decimals());
     }
 
+    /*
+        @notice Sets hold limit
+        @param _newHoldLimit: new hold limit amount
+        @dev While liquidity can be provided externally there is an ability to correct hold limit
+    **/
     function setHoldLimit(uint256 _newHoldLimit) external onlyOwner {
         holdLimit = _newHoldLimit;
     }
 
+    // @notice enables hold limit
     function turnHoldLimitOn() external onlyOwner {
         isHoldLimitActive = true;
     }
 
+    // @notice Disables hold limit
     function turnHoldLimitOff() external onlyOwner {
         isHoldLimitActive = false;
     }
 
+    // @notice Creates GARBAGE/WETH pair on Uniswap
     function createPair() external onlyOwner {
         if (address(uniswapPair) != address(0)) revert PairAlreadyCreated();
         uniswapPair = IUniswapV2Pair(
@@ -46,6 +65,12 @@ contract GarbageToken is ERC20, Ownable {
         );
     }
 
+    /*
+        @notice Provides liquidity to Uniswap
+        @param _shouldBlock: marks if anti-snipers protection and hold limit should be enabled after providing liquidity
+        @dev all contracts balances in GARBAGE and WETH will be provided as liquidity
+        @dev liquidity tokens will be sent to owner
+    **/
     function provideLiquidity(bool shouldBlock) external onlyOwner {
         if (address(uniswapPair) == address(0)) revert PairNotCreated();
         uint256 tokenToList = balanceOf(address(this));
@@ -65,7 +90,7 @@ contract GarbageToken is ERC20, Ownable {
             block.timestamp);
 
         if (shouldBlock) {
-            listingBlock = block.number;
+            antiBotDelayStartBlock = block.number;
             isHoldLimitActive = true;
 
             (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
@@ -73,13 +98,20 @@ contract GarbageToken is ERC20, Ownable {
         }
     }
 
+    // @notice Transfers ERC20 tokens to owner to avoid tokens stuck on contract
+    // @param _token: address of token that should be sent
+    // @param _amount: amount of tokens to send
     function rescueERC20(address _token, uint256 _amount) external onlyOwner {
         IERC20(_token).transfer(owner(), _amount);
     }
 
+    // @notice Modified ERC20 _update function
     function _update(address from, address to, uint256 value) internal override {
-        if (listingBlock != 0
-            && block.number <= listingBlock + antiBotDelay) revert TransfersBlocked();
+        // checking if enough blocks were passed after providing liquidity
+        if (antiBotDelayStartBlock != 0
+            && block.number <= antiBotDelayStartBlock + antiBotDelay) revert TransfersBlocked();
+
+        // checking that resulting wallet value will fit the limit if it is enabled
         if (isHoldLimitActive
             && balanceOf(to) + value > holdLimit
             && to != address(uniswapPair)
@@ -88,6 +120,8 @@ contract GarbageToken is ERC20, Ownable {
         ) {
             revert HoldLimitation();
         }
+
+        // original update function
         super._update(from, to, value);
     }
 }
