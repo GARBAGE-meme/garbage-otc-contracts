@@ -3,17 +3,31 @@ pragma solidity ^0.8.0;
 
 import "src/test/ChainLinkPriceFeedMock.sol";
 import "src/GarbageSale.sol";
+import "src/GarbageSaleV2.sol";
 import "lib/forge-std/src/Test.sol";
 import "src/GarbageToken.sol";
 
-contract GarbageSaleHarness is GarbageSale {
+contract GarbageSaleV1Harness is GarbageSale {
+    constructor(
+        address _priceFeed,
+        uint256 _usdPrice,
+        uint256 _presaleLimit,
+        address _owner
+    ) GarbageSale(_priceFeed, _usdPrice, _presaleLimit, _owner) {}
+
+    function setSaleLimitHarness(uint256 _saleLimit) public {
+        saleLimit = _saleLimit;
+    }
+}
+
+contract GarbageSaleV2Harness is GarbageSaleV2 {
     constructor(
         address _priceFeed,
         uint256 _usdPrice,
         uint256 _presaleLimit,
         address _owner,
         address _saleV2
-    ) GarbageSale(_priceFeed, _usdPrice, _presaleLimit, _owner, _saleV2) {}
+    ) GarbageSaleV2(_priceFeed, _usdPrice, _presaleLimit, _owner, _saleV2) {}
 
     function setSaleLimitHarness(uint256 _saleLimit) public {
         saleLimit = _saleLimit;
@@ -26,7 +40,8 @@ interface IUniswapV2RouterWithSwap is IUniswapV2Router02 {
 
 abstract contract TestHelper is Test {
     ChainLinkPriceFeedMock public priceFeed;
-    GarbageSaleHarness public saleContract;
+    GarbageSaleV1Harness public saleContractV1;
+    GarbageSaleV2Harness public saleContractV2;
     GarbageToken public tokenContract;
 
     uint256 public tokenPrice = 20_000;
