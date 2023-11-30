@@ -23,6 +23,8 @@ This contract have functions for listing itself on Uniswap and providing liquidi
 To protect contract from sniping bots all transfer can be blocked for 5 blocks after providing liquidity.
 To avoid single wallet from holding more than 1% there is hold limit functionality that can be enabled or disabled manually by owner.
 After providing liquidity contract can optionally enable bot protection and holding limit.
+
+More info about protection you can find in [protection.md](protection.md)
 ### GarbageClaim
 Coming soon
 
