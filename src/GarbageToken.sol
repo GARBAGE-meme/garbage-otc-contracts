@@ -24,6 +24,12 @@ contract GarbageToken is ERC20, Ownable {
     bool public isHoldLimitActive;// displays if holding limit is enabled
     IUniswapV2Pair public uniswapPair;// address of Uniswap pair
 
+    event HoldLimitEnabled();
+    event HoldLimitDisabled();
+    event HoldLimitValueSet(uint256 newValue);
+    event PairCreated(address pairAddress);
+    event LiquidityProvided(uint256 tokenAmount, uint256 wethAmount, uint256 block, uint256 timestamp);
+
     error PairAlreadyCreated();
     error PairNotCreated();
     error TransfersBlocked();
@@ -45,16 +51,19 @@ contract GarbageToken is ERC20, Ownable {
     **/
     function setHoldLimit(uint256 _newHoldLimit) external onlyOwner {
         holdLimit = _newHoldLimit;
+        emit HoldLimitValueSet(_newHoldLimit);
     }
 
     // @notice enables hold limit
     function turnHoldLimitOn() external onlyOwner {
         isHoldLimitActive = true;
+        emit HoldLimitEnabled();
     }
 
     // @notice Disables hold limit
     function turnHoldLimitOff() external onlyOwner {
         isHoldLimitActive = false;
+        emit HoldLimitDisabled();
     }
 
     // @notice Creates GARBAGE/WETH pair on Uniswap
@@ -63,6 +72,7 @@ contract GarbageToken is ERC20, Ownable {
         uniswapPair = IUniswapV2Pair(
             IUniswapV2Factory(uniswapV2Router.factory()).createPair(address(this), address(WETH))
         );
+        emit PairCreated(address(uniswapPair));
     }
 
     /*
@@ -79,7 +89,7 @@ contract GarbageToken is ERC20, Ownable {
         _approve(address(this), address(uniswapV2Router), tokenToList);
         WETH.approve(address(uniswapV2Router), wethToList);
 
-        uniswapV2Router.addLiquidity(
+        (uint256 tokenProvided, uint256 wethProvided,) = uniswapV2Router.addLiquidity(
             address(this),
             address(WETH),
             tokenToList,
@@ -89,12 +99,17 @@ contract GarbageToken is ERC20, Ownable {
             owner(),
             block.timestamp);
 
+        emit LiquidityProvided(tokenProvided, wethProvided, block.number, block.timestamp);
+
         if (shouldBlock) {
             antiBotDelayStartBlock = block.number;
             isHoldLimitActive = true;
 
             (uint112 reserve0, uint112 reserve1,) = uniswapPair.getReserves();
             holdLimit = uint256(uniswapPair.token0() == address(this) ? reserve0 : reserve1) / 100;
+
+            emit HoldLimitEnabled();
+            emit HoldLimitValueSet(holdLimit);
         }
     }
 

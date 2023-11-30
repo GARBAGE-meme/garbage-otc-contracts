@@ -14,7 +14,7 @@ contract GarbageSaleDeployScript is Script {
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        saleLimit -= GarbageSale(saleV1).totalTokensSold();
+        saleLimit -= GarbageSale(payable(saleV1)).totalTokensSold();
         require(saleLimit > 0, "Sale limit is less than 0");
         vm.startBroadcast(deployerPrivateKey);
 

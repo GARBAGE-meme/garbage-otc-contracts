@@ -6,6 +6,12 @@ import "./TestHelper.sol";
 contract GarbageTokenTestSuite is TestHelper {
     IUniswapV2Pair public pairContract = IUniswapV2Pair(0x35318373409608AFC0f2cdab5189B3cB28615008);
 
+    event HoldLimitEnabled();
+    event HoldLimitDisabled();
+    event HoldLimitValueSet(uint256 newValue);
+    event PairCreated(address pairAddress);
+    event LiquidityProvided(uint256 tokenAmount, uint256 wethAmount, uint256 block, uint256 timestamp);
+
     function setUp() public override {
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
         tokenContract = new GarbageToken(1e8 * 1e18, address(this));
@@ -20,8 +26,20 @@ contract GarbageTokenTestSuite is TestHelper {
 
         tokenContract.transferOwnership(_owner);
 
+        vm.expectEmit(false,false,false,false);
+        emit PairCreated(0x35318373409608AFC0f2cdab5189B3cB28615008);
+
         vm.prank(_owner);
         tokenContract.createPair();
+
+        vm.expectEmit(true,true,true,true);
+        emit LiquidityProvided(1e6 * 1e18, 10 * 1e18, block.number, block.timestamp);
+
+        vm.expectEmit(true,true,true,true);
+        emit HoldLimitEnabled();
+
+        vm.expectEmit(true,true,true,true);
+        emit HoldLimitValueSet(1e6 * 1e18 / 100);
 
         vm.prank(_owner);
         tokenContract.provideLiquidity(true);
@@ -43,6 +61,9 @@ contract GarbageTokenTestSuite is TestHelper {
         deal(address(tokenContract.WETH()), address(tokenContract), 10 * 1e18);
 
         assertEq(address(tokenContract.uniswapPair()), address(0));
+
+        vm.expectEmit(true,false,false,false);
+        emit PairCreated(address(0));
 
         tokenContract.createPair();
 
