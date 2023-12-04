@@ -14,7 +14,14 @@ contract GarbageTokenTestSuite is TestHelper {
 
     function setUp() public override {
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
-        tokenContract = new GarbageToken(1e8 * 1e18, address(this));
+        tokenContract = new GarbageToken(1e8, address(this));
+    }
+
+    function test_SetUpState() public {
+        assertEq(tokenContract.balanceOf(address(this)), 1e8 * 1e18);
+        assertEq(tokenContract.totalSupply(), 1e8 * 1e18);
+        assertEq(tokenContract.holdLimit(), 1e8 * 1e18 / 100);
+        assertEq(tokenContract.minHoldLimit(), 1e8 * 1e18 / 100 / 100);
     }
 
     /// forge-config: default.fuzz.runs = 10
@@ -37,9 +44,6 @@ contract GarbageTokenTestSuite is TestHelper {
 
         vm.expectEmit(true,true,true,true);
         emit HoldLimitEnabled();
-
-        vm.expectEmit(true,true,true,true);
-        emit HoldLimitValueSet(1e6 * 1e18 / 100);
 
         vm.prank(_owner);
         tokenContract.provideLiquidity(true);
@@ -224,20 +228,27 @@ contract GarbageTokenTestSuite is TestHelper {
     /// forge-config: default.fuzz.runs = 10
     function test_resqueERC20_Ok(uint256 _amount) public {
         vm.assume(_amount < 1e4 * 1e18);
-        tokenContract.transfer(address(tokenContract), _amount);
         deal(address(tokenContract.WETH()), address(tokenContract), _amount);
 
-        uint256 tokenAmountBefore = tokenContract.balanceOf(address(this));
         uint256 wethAmountBefore = tokenContract.WETH().balanceOf(address(this));
 
         tokenContract.rescueERC20(address(tokenContract.WETH()), _amount);
-        tokenContract.rescueERC20(address(tokenContract), _amount);
 
-        uint256 tokenAmountAfter = tokenContract.balanceOf(address(this));
         uint256 wethAmountAfter = tokenContract.WETH().balanceOf(address(this));
 
-        assertEq(tokenAmountAfter, tokenAmountBefore + _amount);
         assertEq(wethAmountAfter, wethAmountBefore + _amount);
+    }
+
+    /// forge-config: default.fuzz.runs = 10
+    function test_resqueERC20_Revert_WhenWithdrawingGarbageToken(uint256 _amount) public {
+        vm.assume(_amount < 1e4 * 1e18);
+        tokenContract.transfer(address(tokenContract), _amount);
+
+        uint256 tokenAmountBefore = tokenContract.balanceOf(address(this));
+
+        vm.expectRevert(abi.encodeWithSelector(CantWithdrawThisToken.selector));
+
+        tokenContract.rescueERC20(address(tokenContract), _amount);
     }
 
     /// forge-config: default.fuzz.runs = 10
@@ -290,5 +301,21 @@ contract GarbageTokenTestSuite is TestHelper {
 
         vm.prank(_nonOwner);
         tokenContract.turnHoldLimitOff();
+    }
+
+    function test_setHoldLimit_Ok(uint256 _amount) public {
+        vm.assume(_amount >= tokenContract.minHoldLimit());
+
+        tokenContract.setHoldLimit(_amount);
+
+        assertEq(tokenContract.holdLimit(), _amount);
+    }
+
+    function test_setHoldLimit_Revert_WhenTryToSetTooLowValue(uint256 _amount) public {
+        vm.assume(_amount < tokenContract.minHoldLimit());
+
+        vm.expectRevert(abi.encodeWithSelector(TooLowHoldLimit.selector));
+
+        tokenContract.setHoldLimit(_amount);
     }
 }
