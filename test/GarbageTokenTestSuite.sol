@@ -20,8 +20,8 @@ contract GarbageTokenTestSuite is TestHelper {
     function test_SetUpState() public {
         assertEq(tokenContract.balanceOf(address(this)), 1e8 * 1e18);
         assertEq(tokenContract.totalSupply(), 1e8 * 1e18);
-        assertEq(tokenContract.holdLimit(), 1e8 * 1e18 / 100);
-        assertEq(tokenContract.minHoldLimit(), 1e8 * 1e18 / 100 / 100);
+        assertEq(tokenContract.holdLimit(), 1e8 * 1e18 / 200);
+        assertEq(tokenContract.minHoldLimit(), 1e8 * 1e18 / 200 / 100);
     }
 
     /// forge-config: default.fuzz.runs = 10

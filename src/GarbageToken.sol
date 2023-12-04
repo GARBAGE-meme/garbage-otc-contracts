@@ -46,7 +46,7 @@ contract GarbageToken is ERC20, Ownable {
     constructor(uint256 _initialSupply, address _owner) ERC20("Garbage Token", "$GARBAGE") Ownable(_owner) {
         uint256 initialSupply = _initialSupply * 10 ** decimals();
         _mint(_owner, initialSupply);
-        holdLimit = initialSupply / 100;
+        holdLimit = initialSupply / 200;
         minHoldLimit = holdLimit / 100;
     }
 
