@@ -240,18 +240,6 @@ contract GarbageTokenTestSuite is TestHelper {
     }
 
     /// forge-config: default.fuzz.runs = 10
-    function test_resqueERC20_Revert_WhenWithdrawingGarbageToken(uint256 _amount) public {
-        vm.assume(_amount < 1e4 * 1e18);
-        tokenContract.transfer(address(tokenContract), _amount);
-
-        uint256 tokenAmountBefore = tokenContract.balanceOf(address(this));
-
-        vm.expectRevert(abi.encodeWithSelector(CantWithdrawThisToken.selector));
-
-        tokenContract.rescueERC20(address(tokenContract), _amount);
-    }
-
-    /// forge-config: default.fuzz.runs = 10
     function test_resqueERC20_Revert_WhenCalledByNonOwner(uint256 _amount, address _nonOwner) public {
         vm.assume(_amount < 1e4 * 1e18);
         vm.assume(_nonOwner != address(this));

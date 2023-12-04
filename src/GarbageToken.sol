@@ -35,7 +35,6 @@ contract GarbageToken is ERC20, Ownable {
     error PairNotCreated();
     error TransfersBlocked();
     error HoldLimitation();
-    error CantWithdrawThisToken();
     error TooLowHoldLimit();
 
     /*
@@ -120,7 +119,6 @@ contract GarbageToken is ERC20, Ownable {
     // @param _token: address of token that should be sent
     // @param _amount: amount of tokens to send
     function rescueERC20(address _token, uint256 _amount) external onlyOwner {
-        if (_token == address(this)) revert CantWithdrawThisToken();
         IERC20(_token).transfer(owner(), _amount);
     }
 
