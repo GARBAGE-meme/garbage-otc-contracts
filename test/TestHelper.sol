@@ -61,6 +61,8 @@ abstract contract TestHelper is Test {
     error PairNotCreated();
     error TransfersBlocked();
     error HoldLimitation();
+    error CantWithdrawThisToken();
+    error TooLowHoldLimit();
 
     error OwnableUnauthorizedAccount(address account);
 
