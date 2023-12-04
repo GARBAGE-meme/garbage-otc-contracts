@@ -1,66 +1,69 @@
-## Foundry
+## Content
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Repo contains contracts for Garbage.
+Contracts were developed using foundry.
 
-Foundry consists of:
+## Repo structure
+- /script - deployment scripts
+- /src - contracts code
+  - /interfaces - interfaces used in contracts
+  - /test - special versions of contracts for deployment to testnet
+- /test - tests
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
 
-## Documentation
+## Contracts
 
-https://book.getfoundry.sh/
+### GarbageSale
+Contract for selling tokens for static price in 0.02 USDT. Purchase happens by transferring ether to contract.
+### GarbageSaleV2
+Contract is designed to take into account some details that were missed in first version and replace it taking into account actual v1 state.
+### GarbageToken
+ERC20 token contract with additional functionality.
+This contract have functions for listing itself on Uniswap and providing liquidity.
+To protect contract from sniping bots all transfer can be blocked for 5 blocks after providing liquidity.
+To avoid single wallet from holding more than 1% there is hold limit functionality that can be enabled or disabled manually by owner.
+After providing liquidity contract can optionally enable bot protection and holding limit.
 
-## Usage
+More info about protection you can find in [protection.md](protection.md)
+### GarbageClaim
+Coming soon
 
-### Build
 
-```shell
-$ forge build
+## Using repo
+### Preparations
+Firstly you need to install [rust](https://www.rust-lang.org/) and [foundry](https://book.getfoundry.sh/getting-started/installation). After this you should install all dependencies with following command:
+``` bash
+forge install
 ```
-
-### Test
-
-```shell
-$ forge test
+After dependencies are installed you should configure envs, all necessary env variables are listed in [`.env.example`](.env.example) file.
+### Building 
+To compile contracts you should run following command: 
+``` bash 
+forge build
 ```
+All build artifacts will be in `/out` folder.
+### Testing
+Tests could be run with next commands.
 
-### Format
+For running all tests:
 
-```shell
-$ forge fmt
+``` bash
+forge test
 ```
+For running GarbageSale tests:
 
-### Gas Snapshots
-
-```shell
-$ forge snapshot
+``` bash
+forge test --match-contract GarbageSaleTestSuit
 ```
+For running GarbageSaleV2 tests:
 
-### Anvil
-
-```shell
-$ anvil
+``` bash
+forge test --match-contract GarbageSaleV2TestSuit
 ```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+For running GarbageToken tests:
+> GarbageToken tests use mainnet fork, you should set **MAINNET_RPC_URL** env variable before running them. 
+> 
+> Also be ready to wait some time while fork tests are running
+``` bash
+forge test --match-contract GarbageTokenTestSuite
 ```
